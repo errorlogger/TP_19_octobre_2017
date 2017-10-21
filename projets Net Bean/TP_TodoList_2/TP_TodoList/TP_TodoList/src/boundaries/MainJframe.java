@@ -12,17 +12,15 @@ import fr.jm.todolist.dto.TdEvent;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
-import java.util.Vector;
+import java.util.SortedSet;
+import java.util.TreeSet;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.DefaultComboBoxModel;
-import javax.swing.DefaultListModel;
 import javax.swing.table.DefaultTableModel;
 
 /**
@@ -43,14 +41,27 @@ public class MainJframe extends javax.swing.JFrame {
         initComponents();
         
         setVisible(true);
+        
         //cn = DatabaseConnection.getInstance();
         cn = DriverManager.getConnection("jdbc:mysql://127.0.0.1:3306/todoliste","root","");
         
-        
+        //instanciation d'un objet (DTO) TdEvent, variable d'instance
         event = new TdEvent();
+        
+        //instanciation d'un objet (DAO) TdListDAO , variable d'instance
         dao = new TdListDAO(cn);
+        
+        //instanciation d'un objet mapRowId qui permet de garder un lien entre le numéro de la ligne
+        //et l'id correspondant à cette même ligne
+        //lorsqu'une ligne est sélectionnée un label affiche sont id en bas de la fenetre
         mapRowId = new HashMap<>();
         
+        //instanciation d'un objet mapIdCategorie qui permet de garder un lien entre les ids des categorie et les valeur pour
+        //identification de la foreign key id_categorie de la table des taches
+        //les categories dont les clés et les ids sont les valeurs <nom_categorie,id>
+        Map<String,Integer> mapIdCategorie = new HashMap<>();
+        
+        //tant qu'aucune ligne n'est sélectionnée les boutons sont désactivés
         jModify.setEnabled(false);
         jAdd.setEnabled(false);
         jDelete.setEnabled(false);
@@ -61,35 +72,60 @@ public class MainJframe extends javax.swing.JFrame {
     
     
     public void initTable() throws SQLException{
-        
+        /* initialisation du tableau et de la combobox via des models*/
         model = (DefaultTableModel) jTable.getModel();
         modelCombo = (DefaultComboBoxModel) jCategories.getModel();
         
+        //a chaque appel de la fonction le nombre de row du tableau et les elements de la combobox sont mis à zéro
         model.setRowCount(0);
         modelCombo.removeAllElements();
         
-       
-        
+        //la fonction getAllTdEventAsDao() renvoie un objet DAO dont on extrait le rst, variable d'instance de cet objet
         ResultSet rst =dao.getAllTdEventAsDao().getRst();
+        
+        // positionnement du curseur
         rst.beforeFirst();
+        
+        // instanciation d'un tableau d'objet pour remplir notre tableau
         Object row[] = new Object[5];
+        
+        //numéro de la ligne
         int rowNumber = 0;
+        
+        //reset du map de correspondance row/id car à chaque appel de initTable cet correspondances changent
         mapRowId.clear();
         
         while(rst.next()){
             
-            mapRowId.put(rowNumber,rst.getInt(1));
+            mapRowId.put(rowNumber,rst.getInt(1));//remplissage de mapRowId
+            
+            //remplissage de row
             row[0]=rst.getString(2);
             row[1]=rst.getString(3);
             row[2]=rst.getBoolean(4);
             row[3]=rst.getBoolean(5);
             
+            //ajout des données au table via son model
             model.addRow(row);
+            
+            //incrémentation de row car row sert de clé dans mapRowId
             rowNumber++;
         }
+        //la fonction getFkMap de la class TdListDAO renvoie un map <categorie,id>
         mapIdCategorie = dao.getFkMap();
-        Set<String> listCategorie = mapIdCategorie.keySet();
         
+        //extraction de toute les clés pour les afficher dans la combo box 
+        //les valeurs sont mises dans un sorted set
+        Set<String> lCat =  mapIdCategorie.keySet();
+        
+        
+        //instanciation d'un treeSet et convertion du set en TreeSet pour classer les catégorie en ordre alphabétique via une boucle for
+        SortedSet<String> listCategorie = new TreeSet<>();
+        for (String entry : lCat) {
+            listCategorie.add(entry);
+            
+        }
+        //ajout des éléments classés par ordre alphabetique dans la combo box via son model
         for (String o : listCategorie) {
             
             modelCombo.addElement(o);
@@ -276,7 +312,7 @@ public class MainJframe extends javax.swing.JFrame {
     }//GEN-LAST:event_jCategoriesMouseClicked
 
     private void jAddActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jAddActionPerformed
-        //addTdEvent
+         //affectation des variables de l'objet event, variable d'instance de notre classe jframe
         setEvent(event);
         try {
             dao.addTdEvent(event);
@@ -289,6 +325,7 @@ public class MainJframe extends javax.swing.JFrame {
     }//GEN-LAST:event_jAddActionPerformed
 
     private void jModifyActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jModifyActionPerformed
+         //affectation des variables de l'objet event, variable d'instance de notre classe jframe
         setEvent(event);
         try {
                dao.modifyTdEvent(event);
@@ -302,6 +339,7 @@ public class MainJframe extends javax.swing.JFrame {
     }//GEN-LAST:event_jModifyActionPerformed
 
     private void jDeleteActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jDeleteActionPerformed
+         //affectation des variables de l'objet event, variable d'instance de notre classe jframe
         setEvent(event);
         
         try {
@@ -325,7 +363,12 @@ public class MainJframe extends javax.swing.JFrame {
     }//GEN-LAST:event_jResetActionPerformed
 
     private void jTableMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jTableMouseClicked
+        //lors d'un click sur une ligne du tableau on recupère ses données via le model et on renseigne tous les champs
+        //de notre frame avec ces dites données
+        //au passage on recupère le numéro de la ligne sélectionnée pour retrouver son id correspondante grace à notre map
+        //mapRowId
         int row = jTable.getSelectedRow();
+        
         jText.setText((String) model.getValueAt(row, 0));
         jCategories.setSelectedItem((String) model.getValueAt(row, 1));
         jUrgent.setSelected((Boolean) model.getValueAt(row, 2));
@@ -336,6 +379,7 @@ public class MainJframe extends javax.swing.JFrame {
         jDelete.setEnabled(true);
         jModify.setEnabled(false);
         
+        //on affecte les variables de notre objet event avec ces données
         setEvent(event);
         
       
@@ -343,7 +387,10 @@ public class MainJframe extends javax.swing.JFrame {
     }//GEN-LAST:event_jTableMouseClicked
 
     private void jTextKeyTyped(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_jTextKeyTyped
-        jModify.setEnabled(true);
+        if (jTable.getSelectedRow() != -1){
+            jModify.setEnabled(true);
+            jAdd.setEnabled(true);
+        }else
         jAdd.setEnabled(true);
     }//GEN-LAST:event_jTextKeyTyped
 
@@ -369,7 +416,7 @@ public class MainJframe extends javax.swing.JFrame {
     }//GEN-LAST:event_jUrgentActionPerformed
 
     public void resetAll(){
-        jMessage.setText("Id = ");
+        jMessage.setText("ID = ");
         jText.setText("");
         jCategories.setSelectedIndex(0);
         jUrgent.setSelected(false);
@@ -382,18 +429,17 @@ public class MainJframe extends javax.swing.JFrame {
     
     private void setEvent(TdEvent ev){
         
-        if (jTable.getSelectedRow() == -1){
-           
-            event.setTdTache(jText.getText());
-            event.setTdCategorie(mapIdCategorie.get((String)jCategories.getSelectedItem()));
-            event.setTdUrgent(jUrgent.isSelected());
-            event.setTdFait(jFait.isSelected());
-        }else{
+        //affectation des variables de l'objet event, variable d'instance de notre classe jframe
+        event.setTdTache(jText.getText());
+        event.setTdCategorie(mapIdCategorie.get((String)jCategories.getSelectedItem()));
+        event.setTdUrgent(jUrgent.isSelected());
+        event.setTdFait(jFait.isSelected()); 
+        
+        //si les données proviennent d'une ligne existante dans notre tableau, on peut alors renseigner l'id
+        //getSelectedRow nous renvoie -1 si aucune ligne n'est sélectionnée
+        if (jTable.getSelectedRow() != -1){
             event.setTdId(mapRowId.get(jTable.getSelectedRow()));
-            event.setTdTache(jText.getText());
-            event.setTdCategorie(mapIdCategorie.get((String)jCategories.getSelectedItem()));
-            event.setTdUrgent(jUrgent.isSelected());
-            event.setTdFait(jFait.isSelected());
+            
         }
     }
     /**

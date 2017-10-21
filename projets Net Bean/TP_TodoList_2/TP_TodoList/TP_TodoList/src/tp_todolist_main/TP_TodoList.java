@@ -1,10 +1,10 @@
 /*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
+ * Ce tp ayant été fini chez moi et n'ayant pas le projet DatabaseConnection
+ * la connection à la base de données est instanciée dans le corps du constructeur de MainJframe
+ * 
  */
 
-package tp_todolist;
+package tp_todolist_main;
 
 import boundaries.MainJframe;
 import java.sql.SQLException;
@@ -16,7 +16,7 @@ import java.sql.SQLException;
 public class TP_TodoList {
 
     /**
-     * @param args the command line arguments
+     * Instanciation d'une jFrame
      */
     public static void main(String[] args) throws SQLException {
         MainJframe jf = new MainJframe();
