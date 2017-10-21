@@ -47,10 +47,10 @@ public class TdListDAO implements InterfaceCrud <TdEvent , TdListDAO >{
         state.setBoolean(3,obj.getTdUrgent());
         state.setBoolean(4,obj.getTdFait());
         
-        ResultSet key = state.getGeneratedKeys();
+        /*ResultSet key = state.getGeneratedKeys();
         if(key.next()){
             obj.setTdId(key.getInt("id"));
-        }
+        }*/
         
         state.executeUpdate();
     }
